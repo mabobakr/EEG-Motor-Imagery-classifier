@@ -7,6 +7,16 @@ import pywt
 from sklearn.model_selection import train_test_split
 
 
+def read_file(fileno):
+  i = fileno
+  x = np.load(f"numpy_data/A0{i}TX.npy")
+  x = x[:, :,1:]
+  x = np.swapaxes(x, 1, 2)
+  y = np.load(f"numpy_data/A0{i}TY.npy")
+
+  return x, y
+
+
 def featurize(x):
   coeff = pywt.wavedec(x, 'db4', level = 7)
   return coeff
@@ -118,3 +128,27 @@ def convert_data():
   #     features[:, i*6: i*6 + 6] = np.stack([mean, abs_mean, mean_squared, std, var, skewness], axis = -1)
 
   # return features.reshape((*features.shape[0:-2], 42*25))
+
+# X_train = torch.from_numpy(X_train)
+# y_train = torch.from_numpy(y_train)
+
+# X_test = torch.from_numpy(X_test)
+# y_test = torch.from_numpy(y_test)
+# print("final shapes are: ", X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+
+# model = nn.Sequential(nn.Linear(32, 64),
+#                     nn.ReLU(),
+#                     nn.Dropout(0.2),
+#                     # nn.Linear(128, 64),
+#                     # nn.ReLU(),
+#                     # nn.Dropout(0.2),
+#                     nn.Linear(64, 4),
+#                     nn.LogSoftmax(dim=1))
+
+# train_losses, validation_losses =\
+#     nn_train(model, X_train, y_train, X_test, y_test, epochs=1000, lr=0.001, validate_every=100, debug=True)
+
+# plt.plot(train_losses, label='Training loss')
+# plt.plot(validation_losses, label='Validation loss')
+# plt.legend(frameon=False)
+# plt.show()

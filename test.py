@@ -14,6 +14,29 @@ from classifier import nn_train, nn_predict, nn_accuracy
 from torchvision import datasets, transforms, models
 import time
 
+
+### Test filtering code
+t = np.linspace(0, 5, 5000, False)
+
+sig10 = np.sin(2 * np.pi * 10 * t)
+sig20 = np.sin(2 * np.pi * 20 * t)
+sig15 = np.sin(2 * np.pi * 15 * t)
+
+sig = sig10 + sig20 + sig15
+
+def plot(t, sig):
+  fig, (ax1) = plt.subplots(1, 1, sharex=True)
+  ax1.plot(t, sig)
+  ax1.set_title('10 Hz and 20 Hz sinusoids')
+  ax1.axis([0, 5, -2, 2])
+
+plot(t, sig10)
+plot(t, sig15)
+plot(t, sig20)
+plot(t, sig)
+
+
+### Test the nn code
 max_train = 0
 max_test = 0
 best_model = -1
