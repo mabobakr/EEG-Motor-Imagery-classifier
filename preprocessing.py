@@ -5,6 +5,7 @@ import mne
 import re
 import pywt
 from sklearn.model_selection import train_test_split
+from scipy.signal import butter, sosfilt
 
 
 def read_file(fileno):
@@ -52,6 +53,10 @@ def read(seed = 42):
   return X_train, X_test, y_train, y_test
 
 
+def filter(signal, band, fs):
+  sos = butter(5, band, 'bandpass', fs=fs, output='sos')
+  filtered = sosfilt(sos, signal)
+  return filtered
 
 
 def convert_file(filename):
@@ -66,11 +71,11 @@ def convert_file(filename):
   events = mne.events_from_annotations(data)
   codes = events[1]
   events = events[0]
-  print(events, codes)
+  # print(events, codes)
 
   # convert annotations to mne codes
-  filter = np.asarray(['769', '770', '771', '772'])
-  lis = np.asarray([codes[i] for i in filter])
+  cfilter = np.asarray(['769', '770', '771', '772'])
+  lis = np.asarray([codes[i] for i in cfilter])
 
   # filter for classes
   ev = events[np.in1d(events[:, 2], lis)]
@@ -79,8 +84,10 @@ def convert_file(filename):
   x = np.zeros((288, 313, 26))
   y = np.zeros(288)
 
+  values = dataframe.values
+  
   for point in range(len(ev)):
-    x[point] = dataframe.values[ev[point][0]:ev[point][0]+313]
+    x[point] = values[ev[point][0]:ev[point][0]+313]
     y[point] = ev[point][2] - lis[0] + 1
     
   # Create directory for numpy data
