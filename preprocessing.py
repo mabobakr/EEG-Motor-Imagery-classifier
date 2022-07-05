@@ -1,3 +1,4 @@
+from random import random
 import numpy as np
 import pandas as pd
 import os
@@ -21,7 +22,7 @@ def read_file(fileno):
 
 # fileno is the number of subect
 def read_file_sim(fileno): # For Simulator
-  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   i = fileno
   x = np.load(f"numpy_test_data/{i}X.npy")
   y = np.load(f"numpy_test_data/{i}Y.npy")
@@ -34,7 +35,7 @@ def read_file_sim(fileno): # For Simulator
 # model_name is the joblib file name of model
 # csp_name is the joblib file name of the csp list
 def predict(x, model_name, csp_name):
-  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   x = [x]
   model = load(model_name)
   csp = load(csp_name)
@@ -49,10 +50,11 @@ def predict(x, model_name, csp_name):
 # csp_name is the joblib file name of the csp list
 model = load("model.joblib")
 csp = load("csp.joblib")
+# print("preprocessing is on",random() * 1000)
 def efficient_predict(x):
   global model
   global csp
-  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   x = [x]
   # model = load(model_name)
   # csp = load(csp_name)
