@@ -6,6 +6,7 @@ import re
 import pywt
 from sklearn.model_selection import train_test_split
 from scipy.signal import butter, sosfilt
+from joblib import dump, load
 
 
 
@@ -33,13 +34,14 @@ def read_file_sim(fileno): # For Simulator
 # model_name is the joblib file name of model
 # csp_name is the joblib file name of the csp list
 def predict(x, model_name, csp_name):
-  x = [x]
   labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  x = [x]
   model = load(model_name)
   csp = load(csp_name)
   test_coeff = featurize(x)
   coeff_len = len(test_coeff)
-  X_test_f = np.concatenate(tuple(csp[x].transform(test_coeff[x]) for x  in range(coeff_len)),axis=-1)
+  
+  X_test_f = np.concatenate(tuple(csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
   return labels[model.predict(X_test_f[0:1])[0]]
 
 def featurize(x):
