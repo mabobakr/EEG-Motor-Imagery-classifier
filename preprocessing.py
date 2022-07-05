@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from scipy.signal import butter, sosfilt
 
 
+
 def read_file(fileno):
   i = fileno
   x = np.load(f"numpy_data/A0{i}TX.npy")
@@ -17,40 +18,63 @@ def read_file(fileno):
 
   return x, y
 
+# fileno is the number of subect
+def read_file_sim(fileno): # For Simulator
+  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  i = fileno
+  x = np.load(f"numpy_test_data/{i}X.npy")
+  y = np.load(f"numpy_test_data/{i}Y.npy")
+
+  y = np.array([labels[i] for i in y])
+
+  return x, y
+
+# X is data of one sample
+# model_name is the joblib file name of model
+# csp_name is the joblib file name of the csp list
+def predict(x, model_name, csp_name):
+  x = [x]
+  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  model = load(model_name)
+  csp = load(csp_name)
+  test_coeff = featurize(x)
+  coeff_len = len(test_coeff)
+  X_test_f = np.concatenate(tuple(csp[x].transform(test_coeff[x]) for x  in range(coeff_len)),axis=-1)
+  return labels[model.predict(X_test_f[0:1])[0]]
 
 def featurize(x):
   coeff = pywt.wavedec(x, 'db4', level = 7)
   return coeff
   
 
-def read(seed = 42):
-  if os.path.exists("numpy_data"):
-    pass
-  else:
-    print("data directory doesn't exist")
-    exit(1)
+# def read(seed = 42):
+#   if os.path.exists("numpy_data"):
+#     pass
+#   else:
+#     print("data directory doesn't exist")
+#     exit(1)
 
 
-  for i in range(1, 10):
-    x_temp = np.load(f"numpy_data/A0{i}TX.npy")
-    x_temp = x_temp[:, :,1:]
-    x_temp = np.swapaxes(x_temp, 1, 2)
-    y_temp = np.load(f"numpy_data/A0{i}TY.npy") - 1
+#   for i in range(1, 10):
+#     x_temp = np.load(f"numpy_data/A0{i}TX.npy")
+#     x_temp = x_temp[:, :,1:]
+#     x_temp = np.swapaxes(x_temp, 1, 2)
+#     y_temp = np.load(f"numpy_data/A0{i}TY.npy") - 1
       
-    if i == 1:
-      X_train, X_test, y_train, y_test = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
-      continue
-    else:
-      X_trainT, X_testT, y_trainT, y_testT = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
+#     if i == 1:
+#       X_train, X_test, y_train, y_test = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
+#       continue
+#     else:
+#       X_trainT, X_testT, y_trainT, y_testT = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
 
-    X_train = np.concatenate((X_train, X_trainT))
-    X_test = np.concatenate((X_test, X_testT))
-    y_train = np.concatenate((y_train, y_trainT))
-    y_test = np.concatenate((y_test, y_testT))
-    print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+#     X_train = np.concatenate((X_train, X_trainT))
+#     X_test = np.concatenate((X_test, X_testT))
+#     y_train = np.concatenate((y_train, y_trainT))
+#     y_test = np.concatenate((y_test, y_testT))
+#     print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
       
-  return X_train, X_test, y_train, y_test
+#   return X_train, X_test, y_train, y_test
 
 
 def filter(signal, band, fs):
@@ -84,7 +108,7 @@ def convert_file(filename):
   x = np.zeros((288, 313, 26))
   y = np.zeros(288)
 
-  values = dataframe.values
+  values = dataframe.values#filter(dataframe.values.T, [8, 12], 250).T
   
   for point in range(len(ev)):
     x[point] = values[ev[point][0]:ev[point][0]+313]
@@ -113,6 +137,23 @@ def convert_data():
   for file in datafiles:
     if re.match(r"A0[0-9]T.gdf", file):
       convert_file("data/" +file)
+
+
+def create_test_data():
+  if not os.path.exists("numpy_test_data"):
+    print("Please create a folder named numpy_test_data and rerun")
+    print("note: you should run convert_data first")
+    exit(1)
+
+
+  for i in range(1, 10):
+    x, y = read_file(i)
+
+    X_train, X_test, y_train, y_test = train_test_split(x, y, random_state = 100, test_size = 0.2)
+
+    # Save data to numpy arrays
+    np.save(f"numpy_test_data/{i}X", X_test)
+    np.save(f"numpy_test_data/{i}Y", y_test)
 
 
 # def read_data(folder_name):
