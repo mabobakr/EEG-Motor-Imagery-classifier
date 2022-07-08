@@ -26,18 +26,3 @@ source env/bin/activate
 ### Install Dependencies
 
 Run `pip install -r requirements.txt` to install any dependencies.
-
-### Run the model simulation
-
-<b>running using gitbash</b>
-
-<b>running on linux</b>
-```bash
-export FLASK_APP=flaskr
-export FLASK_DEBUG=1
-flask run --reload --host=0.0.0.0
-
-```
-### Run the GUI
-
-`python -m flaskr`

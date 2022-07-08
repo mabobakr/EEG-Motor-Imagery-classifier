@@ -44,6 +44,24 @@ def predict(x, model, csp):
   X_test_f = np.concatenate(tuple(csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
   return labels[model.predict(X_test_f[0:1])[0]]
 
+# X is data of one sample
+# model_name is the joblib file name of model
+# csp_name is the joblib file name of the csp list
+model = load("model.joblib")
+csp = load("csp.joblib")
+def efficient_predict(x):
+  global model
+  global csp
+  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  x = [x]
+  # model = load(model_name)
+  # csp = load(csp_name)
+  test_coeff = featurize(x)
+  coeff_len = len(test_coeff)
+  
+  X_test_f = np.concatenate(tuple(csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
+  return labels[model.predict(X_test_f[0:1])[0]]
+
 def featurize(x):
   coeff = pywt.wavedec(x, 'db4', level = 7)
   return coeff
