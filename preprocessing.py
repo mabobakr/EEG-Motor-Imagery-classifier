@@ -21,7 +21,7 @@ def read_file(fileno):
 
 # fileno is the number of subect
 def read_file_sim(fileno): # For Simulator
-  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   i = fileno
   x = np.load(f"numpy_test_data/{i}X.npy")
   y = np.load(f"numpy_test_data/{i}Y.npy")
@@ -33,11 +33,11 @@ def read_file_sim(fileno): # For Simulator
 # X is data of one sample
 # model_name is the joblib file name of model
 # csp_name is the joblib file name of the csp list
-def predict(x, model_name, csp_name):
-  labels = {1: "L", 2: "R ", 3: "F", 4: "B"}
+def predict(x, model, csp):
+  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   x = [x]
-  model = load(model_name)
-  csp = load(csp_name)
+  # model = load(model_name)
+  # csp = load(csp_name)
   test_coeff = featurize(x)
   coeff_len = len(test_coeff)
   
@@ -85,7 +85,7 @@ def filter(signal, band, fs):
   return filtered
 
 
-def convert_file(filename):
+def convert_file(filename, test=False):
   
   # load the gdf file
   data = mne.io.read_raw_gdf(filename)
@@ -97,10 +97,15 @@ def convert_file(filename):
   events = mne.events_from_annotations(data)
   codes = events[1]
   events = events[0]
-  # print(events, codes)
+  print(events, codes)
+  for ev in events:
+    print(ev)
 
   # convert annotations to mne codes
-  cfilter = np.asarray(['769', '770', '771', '772'])
+  if test:
+    cfilter = np.asarray(['783'])
+  else:
+    cfilter = np.asarray(['769', '770', '771', '772'])
   lis = np.asarray([codes[i] for i in cfilter])
 
   # filter for classes
@@ -125,7 +130,8 @@ def convert_file(filename):
   
   # Save data to numpy arrays
   np.save(f"numpy_data/{new_name}X", x)
-  np.save(f"numpy_data/{new_name}Y", y)
+  if not test:
+    np.save(f"numpy_data/{new_name}Y", y)
 
 
 def convert_data():
@@ -139,6 +145,8 @@ def convert_data():
   for file in datafiles:
     if re.match(r"A0[0-9]T.gdf", file):
       convert_file("data/" +file)
+    if re.match(r"A0[0-9]E.gdf", file):
+      convert_file("data/" +file, True)
 
 
 def create_test_data():
