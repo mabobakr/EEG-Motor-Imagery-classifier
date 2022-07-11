@@ -67,42 +67,15 @@ def featurize(x):
   return coeff
   
 
-# def read(seed = 42):
-#   if os.path.exists("numpy_data"):
-#     pass
-#   else:
-#     print("data directory doesn't exist")
-#     exit(1)
 
-
-#   for i in range(1, 10):
-#     x_temp = np.load(f"numpy_data/A0{i}TX.npy")
-#     x_temp = x_temp[:, :,1:]
-#     x_temp = np.swapaxes(x_temp, 1, 2)
-#     y_temp = np.load(f"numpy_data/A0{i}TY.npy") - 1
-      
-#     if i == 1:
-#       X_train, X_test, y_train, y_test = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
-#       continue
-#     else:
-#       X_trainT, X_testT, y_trainT, y_testT = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
-
-#     X_train = np.concatenate((X_train, X_trainT))
-#     X_test = np.concatenate((X_test, X_testT))
-#     y_train = np.concatenate((y_train, y_trainT))
-#     y_test = np.concatenate((y_test, y_testT))
-#     print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-
-      
-#   return X_train, X_test, y_train, y_test
-
-
+# Apply butterworth filter
+# band is an array like [4, 17] where 4 is lower limit and 17 upper
 def filter(signal, band, fs):
   sos = butter(5, band, 'bandpass', fs=fs, output='sos')
   filtered = sosfilt(sos, signal)
   return filtered
 
-
+# Extract EEG training data and convert it to numpy
 def convert_file(filename, test=False):
   
   # load the gdf file
@@ -115,9 +88,9 @@ def convert_file(filename, test=False):
   events = mne.events_from_annotations(data)
   codes = events[1]
   events = events[0]
-  print(events, codes)
-  for ev in events:
-    print(ev)
+  # print(events, codes)
+  # for ev in events:
+  #   print(ev)
 
   # convert annotations to mne codes
   if test:
@@ -152,6 +125,7 @@ def convert_file(filename, test=False):
     np.save(f"numpy_data/{new_name}Y", y)
 
 
+# Apply convert file to all files in the data directory
 def convert_data():
   if os.path.exists("data"):
     datafiles = os.listdir("data")
@@ -167,6 +141,7 @@ def convert_data():
       convert_file("data/" +file, True)
 
 
+# Splits the data and save test data in a directory
 def create_test_data():
   if not os.path.exists("numpy_test_data"):
     print("Please create a folder named numpy_test_data and rerun")
@@ -184,47 +159,3 @@ def create_test_data():
     np.save(f"numpy_test_data/{i}Y", y_test)
 
 
-# def read_data(folder_name):
-  
-
-  
-  # features = np.zeros((*x.shape[0:-1], 6*7))
-  
-  # for i, c in enumerate(coeff):
-  #   mean = np.mean(c, axis=-1)
-  #   abs_mean = np.mean(np.abs(c), axis=-1)
-  #   mean_squared = np.mean(c**2, axis=-1)
-  #   std = np.std(c, axis=-1)
-  #   var = np.var(c, axis=-1)
-  #   skewness = stats.skew(c, axis=-1)
-
-  #   if len(features.shape) == 3:
-  #     features[:,:, i*6: i*6 + 6] = np.stack([mean, abs_mean, mean_squared, std, var, skewness], axis = -1)
-  #   elif len(features.shape) == 2:
-  #     features[:, i*6: i*6 + 6] = np.stack([mean, abs_mean, mean_squared, std, var, skewness], axis = -1)
-
-  # return features.reshape((*features.shape[0:-2], 42*25))
-
-# X_train = torch.from_numpy(X_train)
-# y_train = torch.from_numpy(y_train)
-
-# X_test = torch.from_numpy(X_test)
-# y_test = torch.from_numpy(y_test)
-# print("final shapes are: ", X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-
-# model = nn.Sequential(nn.Linear(32, 64),
-#                     nn.ReLU(),
-#                     nn.Dropout(0.2),
-#                     # nn.Linear(128, 64),
-#                     # nn.ReLU(),
-#                     # nn.Dropout(0.2),
-#                     nn.Linear(64, 4),
-#                     nn.LogSoftmax(dim=1))
-
-# train_losses, validation_losses =\
-#     nn_train(model, X_train, y_train, X_test, y_test, epochs=1000, lr=0.001, validate_every=100, debug=True)
-
-# plt.plot(train_losses, label='Training loss')
-# plt.plot(validation_losses, label='Validation loss')
-# plt.legend(frameon=False)
-# plt.show()
