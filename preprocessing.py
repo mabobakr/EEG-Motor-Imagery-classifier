@@ -103,13 +103,13 @@ def convert_file(filename, test=False):
   ev = events[np.in1d(events[:, 2], lis)]
 
   # extract the samples from events
-  x = np.zeros((288, 313, 26))
+  x = np.zeros((288, 750, 26))
   y = np.zeros(288)
 
   values = dataframe.values#filter(dataframe.values.T, [8, 12], 250).T
   
   for point in range(len(ev)):
-    x[point] = values[ev[point][0]:ev[point][0]+313]
+    x[point] = values[ev[point][0]:ev[point][0]+750]
     y[point] = ev[point][2] - lis[0] + 1
     
   # Create directory for numpy data
