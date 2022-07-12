@@ -36,8 +36,6 @@ def read_file_sim(directory, filename):
 
 
 # X is data of one sample
-# model_name is the joblib file name of model
-# csp_name is the joblib file name of the csp list
 model = load("model.joblib")
 csp = load("csp.joblib")
 def predict(x):
@@ -45,13 +43,25 @@ def predict(x):
   global csp
   labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   x = [x]
-  # model = load(model_name)
-  # csp = load(csp_name)
   test_coeff = featurize(x)
   coeff_len = len(test_coeff)
   
   X_test_f = np.concatenate(tuple(csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
   return labels[model.predict(X_test_f[0:1])[0]]
+
+# X is data of one sample
+idle_model = load("idle_model.joblib")
+idle_csp = load("idle_csp.joblib")
+def predict_idle(x):
+  global idle_model
+  global idle_csp
+  
+  x = [x]
+  test_coeff = featurize(x)
+  coeff_len = len(test_coeff)
+  
+  x_test_f = np.concatenate(tuple(idle_csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
+  return idle_model.predict(x_test_f[0:1])[0]
 
 
 # apply discrete wavelet transform
