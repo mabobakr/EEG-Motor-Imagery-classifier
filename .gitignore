@@ -1,3 +1,4 @@
 *.gdf
 *.npy
 /env
+__pycache__/
