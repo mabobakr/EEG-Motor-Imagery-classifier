@@ -15,13 +15,21 @@ def read_file(directory, filename):
   y = np.load(f"{directory}/{filename}Y.npy")
   return x, y
 
-# fileno is the number of subect
-def read_file_sim(fileno): # For Simulator
-  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
-  i = fileno
-  x = np.load(f"numpy_test_data/{i}X.npy")
-  y = np.load(f"numpy_test_data/{i}Y.npy")
+# fileno is the number of subject
+# def read_file_sim(fileno): # For Simulator
+#   labels = {1: "L", 2: "R", 3: "F", 4: "B"}
+#   i = fileno
+#   x = np.load(f"numpy_test_data/{i}X.npy")
+#   y = np.load(f"numpy_test_data/{i}Y.npy")
 
+#   y = np.array([labels[i] for i in y])
+
+#   return x, y
+
+def read_file_sim(directory, filename):
+  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
+  x = np.load(f"{directory}/{filename}X.npy")
+  y = np.load(f"{directory}/{filename}Y.npy")
   y = np.array([labels[i] for i in y])
 
   return x, y
