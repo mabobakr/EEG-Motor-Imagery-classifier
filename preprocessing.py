@@ -8,146 +8,93 @@ import pywt
 from sklearn.model_selection import train_test_split
 from scipy.signal import butter, sosfilt
 from joblib import dump, load
+from sklearn.utils import shuffle
 
 
-
-def read_file(fileno):
-  i = fileno
-  x = np.load(f"numpy_data/A0{i}TX.npy")
-  x = x[:, :,1:]
-  x = np.swapaxes(x, 1, 2)
-  y = np.load(f"numpy_data/A0{i}TY.npy")
-
+def read_file(directory, filename):
+  x = np.load(f"{directory}/{filename}X.npy")
+  y = np.load(f"{directory}/{filename}Y.npy")
   return x, y
 
-# fileno is the number of subect
-def read_file_sim(fileno): # For Simulator
-  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
-  i = fileno
-  x = np.load(f"numpy_test_data/{i}X.npy")
-  y = np.load(f"numpy_test_data/{i}Y.npy")
+# fileno is the number of subject
+# def read_file_sim(fileno): # For Simulator
+#   labels = {1: "L", 2: "R", 3: "F", 4: "B"}
+#   i = fileno
+#   x = np.load(f"numpy_test_data/{i}X.npy")
+#   y = np.load(f"numpy_test_data/{i}Y.npy")
 
+#   y = np.array([labels[i] for i in y])
+
+#   return x, y
+
+def read_file_sim(directory, filename):
+  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
+  x = np.load(f"{directory}/{filename}X.npy")
+  y = np.load(f"{directory}/{filename}Y.npy")
   y = np.array([labels[i] for i in y])
 
   return x, y
 
-# X is data of one sample
-# model_name is the joblib file name of model
-# csp_name is the joblib file name of the csp list
-def predict(x, model_name, csp_name):
-  labels = {1: "L", 2: "R", 3: "F", 4: "B"}
-  x = [x]
-  model = load(model_name)
-  csp = load(csp_name)
-  test_coeff = featurize(x)
-  coeff_len = len(test_coeff)
-  
-  X_test_f = np.concatenate(tuple(csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
-  return labels[model.predict(X_test_f[0:1])[0]]
 
 # X is data of one sample
-# model_name is the joblib file name of model
-# csp_name is the joblib file name of the csp list
 model = load("model.joblib")
 csp = load("csp.joblib")
-# print("preprocessing is on",random() * 1000)
-def efficient_predict(x):
+def predict(x):
   global model
   global csp
   labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   x = [x]
-  # model = load(model_name)
-  # csp = load(csp_name)
   test_coeff = featurize(x)
   coeff_len = len(test_coeff)
   
   X_test_f = np.concatenate(tuple(csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
   return labels[model.predict(X_test_f[0:1])[0]]
 
+# X is data of one sample
+idle_model = load("idle_model.joblib")
+idle_csp = load("idle_csp.joblib")
+def predict_idle(x):
+  global idle_model
+  global idle_csp
+  
+  x = [x]
+  test_coeff = featurize(x)
+  coeff_len = len(test_coeff)
+  
+  x_test_f = np.concatenate(tuple(idle_csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
+  return idle_model.predict(x_test_f[0:1])[0]
+
+
+# apply discrete wavelet transform
 def featurize(x):
   coeff = pywt.wavedec(x, 'db4', level = 7)
-  return coeff
-  
-
-# def read(seed = 42):
-#   if os.path.exists("numpy_data"):
-#     pass
-#   else:
-#     print("data directory doesn't exist")
-#     exit(1)
+  return coeff  
 
 
-#   for i in range(1, 10):
-#     x_temp = np.load(f"numpy_data/A0{i}TX.npy")
-#     x_temp = x_temp[:, :,1:]
-#     x_temp = np.swapaxes(x_temp, 1, 2)
-#     y_temp = np.load(f"numpy_data/A0{i}TY.npy") - 1
-      
-#     if i == 1:
-#       X_train, X_test, y_train, y_test = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
-#       continue
-#     else:
-#       X_trainT, X_testT, y_trainT, y_testT = train_test_split(x_temp, y_temp, random_state = seed, test_size = 0.2)
-
-#     X_train = np.concatenate((X_train, X_trainT))
-#     X_test = np.concatenate((X_test, X_testT))
-#     y_train = np.concatenate((y_train, y_trainT))
-#     y_test = np.concatenate((y_test, y_testT))
-#     print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-
-      
-#   return X_train, X_test, y_train, y_test
-
-
+# Apply butterworth filter
+# band is an array like [4, 17] where 4 is lower limit and 17 upper
 def filter(signal, band, fs):
   sos = butter(5, band, 'bandpass', fs=fs, output='sos')
   filtered = sosfilt(sos, signal)
   return filtered
 
 
-def convert_file(filename):
-  
+def read_gdf(filename):
   # load the gdf file
   data = mne.io.read_raw_gdf(filename)
 
-  # get data in dataframe format
-  dataframe = data.to_data_frame()
+  # get data samples shape (num_of_samples, num_electrodes)
+  values = data.to_data_frame().values[:, 1:]
 
   # Get the events 
   events = mne.events_from_annotations(data)
   codes = events[1]
   events = events[0]
-  # print(events, codes)
 
-  # convert annotations to mne codes
-  cfilter = np.asarray(['769', '770', '771', '772'])
-  lis = np.asarray([codes[i] for i in cfilter])
-
-  # filter for classes
-  ev = events[np.in1d(events[:, 2], lis)]
-
-  # extract the samples from events
-  x = np.zeros((288, 313, 26))
-  y = np.zeros(288)
-
-  values = dataframe.values#filter(dataframe.values.T, [8, 12], 250).T
-  
-  for point in range(len(ev)):
-    x[point] = values[ev[point][0]:ev[point][0]+313]
-    y[point] = ev[point][2] - lis[0] + 1
-    
-  # Create directory for numpy data
-  if not os.path.exists("numpy_data"):
-    os.mkdir(os.path.join(os.getcwd(), "numpy_data"))
-
-  # get file name without extension or path
-  new_name = os.path.splitext(os.path.basename(filename))[0]
-  
-  # Save data to numpy arrays
-  np.save(f"numpy_data/{new_name}X", x)
-  np.save(f"numpy_data/{new_name}Y", y)
+  return values, codes, events
 
 
+# Apply convert file to all files in the data directory
 def convert_data():
   if os.path.exists("data"):
     datafiles = os.listdir("data")
@@ -157,68 +104,128 @@ def convert_data():
     exit(1)
 
   for file in datafiles:
-    if re.match(r"A0[0-9]T.gdf", file):
-      convert_file("data/" +file)
+    if re.match(r"A0[0-9].gdf", file):
+      
+      values, codes, events = read_gdf("data/" + file)
+      
+      # number of samples of one electrode 
+      psize = 750
+
+      # Extract idle data points from raw data
+      x_idle, y_idle = idle_points(values, events, psize)
+      xi_train, xi_test, yi_train, yi_test = train_test_split(x_idle, y_idle, random_state = 42, test_size = 0.2)
+      
+      # Extract actions data points from raw data
+      x_actions, y_actions = action_points(values, codes, events, psize)
+      xa_train, xa_test, ya_train, ya_test = train_test_split(x_actions, y_actions, random_state = 42, test_size = 0.2)
+
+      # xa => x of actions model, xi => x of idle model
+
+      # get file name without extension or path
+      new_name = os.path.splitext(os.path.basename(file))[0]
+
+        # Create directory for numpy data
+      dir_name = "action_train"
+      if not os.path.exists(dir_name):
+        os.mkdir(os.path.join(os.getcwd(), dir_name))
+      
+      # save X_actions and y_actions train
+      np.save(f"{dir_name}/{new_name}X", xa_train)
+      np.save(f"{dir_name}/{new_name}Y", ya_train)
+
+      dir_name = "action_test"
+      if not os.path.exists(dir_name):
+        os.mkdir(os.path.join(os.getcwd(), dir_name))
+      
+      # save X_action and y_actions test
+      np.save(f"{dir_name}/{new_name}X", xa_test)
+      np.save(f"{dir_name}/{new_name}Y", ya_test)
+
+      dir_name = "idle_train"
+      if not os.path.exists(dir_name):
+        os.mkdir(os.path.join(os.getcwd(), dir_name))
+      
+      # save (X_actions train + X_idle train) and (y_actions train + y_idle train)
+      
+      # change y-labels to from 1,2,3,4 to 1 (means action)
+      ya_train = np.ones((len(ya_train)))
+
+      x = np.concatenate((xa_train, xi_train))
+      y = np.concatenate((ya_train, yi_train))
+      x, y = shuffle(x, y)
+      np.save(f"{dir_name}/{new_name}X", x)
+      np.save(f"{dir_name}/{new_name}Y", y)
 
 
-def create_test_data():
-  if not os.path.exists("numpy_test_data"):
-    print("Please create a folder named numpy_test_data and rerun")
-    print("note: you should run convert_data first")
-    exit(1)
+      dir_name = "idle_test"
+      if not os.path.exists(dir_name):
+        os.mkdir(os.path.join(os.getcwd(), dir_name))
+
+      # save (X_actions test + X_idle test) and (y_actions test + y_idle test)
+      
+      # change y-labels to from 1,2,3,4 to 1 (means action)
+      ya_test = np.ones((len(ya_test)))
+      x = np.concatenate((xa_test, xi_test))
+      y = np.concatenate((ya_test, yi_test))
+      x, y = shuffle(x, y)
+      np.save(f"{dir_name}/{new_name}X", x)
+      np.save(f"{dir_name}/{new_name}Y", y)
 
 
-  for i in range(1, 10):
-    x, y = read_file(i)
 
-    X_train, X_test, y_train, y_test = train_test_split(x, y, random_state = 100, test_size = 0.2)
+# Extract idle data points from raw data
+# psize is the number of samples of one data point (for one electrode)
+def idle_points(values, events, psize = 750):
+  
+  # last idle sample
+  idle_size = events[6, 0]
+  
+  # number of data points
+  num_idle_samples = idle_size // psize
+  
+  # number of samples of all idle points
+  idle_size = num_idle_samples * psize
 
-    # Save data to numpy arrays
-    np.save(f"numpy_test_data/{i}X", X_test)
-    np.save(f"numpy_test_data/{i}Y", y_test)
-
-
-# def read_data(folder_name):
+  # x and y arrays of size 288(actions) + number of idle samples
+  x = np.zeros((num_idle_samples, psize, 25))
+  y = np.zeros(num_idle_samples)
   
 
+  index = 0
+  for i in range(0, idle_size, psize):
+    x[index] = values[i:i + psize]
+    index += 1
   
-  # features = np.zeros((*x.shape[0:-1], 6*7))
+  x = np.swapaxes(x, 1, 2)
+
+  return x, y
+
+
+def action_points(values, codes, events, psize = 750):
   
-  # for i, c in enumerate(coeff):
-  #   mean = np.mean(c, axis=-1)
-  #   abs_mean = np.mean(np.abs(c), axis=-1)
-  #   mean_squared = np.mean(c**2, axis=-1)
-  #   std = np.std(c, axis=-1)
-  #   var = np.var(c, axis=-1)
-  #   skewness = stats.skew(c, axis=-1)
+  # convert annotations to mne codes
+  cfilter = np.asarray(['769', '770', '771', '772'])
+  lis = np.asarray([codes[i] for i in cfilter])
 
-  #   if len(features.shape) == 3:
-  #     features[:,:, i*6: i*6 + 6] = np.stack([mean, abs_mean, mean_squared, std, var, skewness], axis = -1)
-  #   elif len(features.shape) == 2:
-  #     features[:, i*6: i*6 + 6] = np.stack([mean, abs_mean, mean_squared, std, var, skewness], axis = -1)
+  # filter for classes
+  ev = events[np.in1d(events[:, 2], lis)]
 
-  # return features.reshape((*features.shape[0:-2], 42*25))
+  # extract the samples from events
+  x = np.zeros((288, psize, 25))
+  y = np.zeros(288)
 
-# X_train = torch.from_numpy(X_train)
-# y_train = torch.from_numpy(y_train)
+  
+  for point in range(len(ev)):
+    x[point] = values[ev[point][0]:ev[point][0]+psize]
+    y[point] = ev[point][2] - lis[0] + 1
+    
+  x = np.swapaxes(x, 1, 2)
 
-# X_test = torch.from_numpy(X_test)
-# y_test = torch.from_numpy(y_test)
-# print("final shapes are: ", X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+  return x, y
+  
 
-# model = nn.Sequential(nn.Linear(32, 64),
-#                     nn.ReLU(),
-#                     nn.Dropout(0.2),
-#                     # nn.Linear(128, 64),
-#                     # nn.ReLU(),
-#                     # nn.Dropout(0.2),
-#                     nn.Linear(64, 4),
-#                     nn.LogSoftmax(dim=1))
 
-# train_losses, validation_losses =\
-#     nn_train(model, X_train, y_train, X_test, y_test, epochs=1000, lr=0.001, validate_every=100, debug=True)
+  
 
-# plt.plot(train_losses, label='Training loss')
-# plt.plot(validation_losses, label='Validation loss')
-# plt.legend(frameon=False)
-# plt.show()
+
+
