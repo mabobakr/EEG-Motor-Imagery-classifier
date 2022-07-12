@@ -7,7 +7,7 @@ import pywt
 from sklearn.model_selection import train_test_split
 from scipy.signal import butter, sosfilt
 from joblib import dump, load
-
+from sklearn.utils import shuffle
 
 
 def read_file(directory, filename):
@@ -96,7 +96,7 @@ def convert_data():
     if re.match(r"A0[0-9].gdf", file):
       
       values, codes, events = read_gdf("data/" + file)
-
+      
       # number of samples of one electrode 
       psize = 750
 
@@ -135,18 +135,28 @@ def convert_data():
         os.mkdir(os.path.join(os.getcwd(), dir_name))
       
       # save (X_actions train + X_idle train) and (y_actions train + y_idle train)
+      
+      # change y-labels to from 1,2,3,4 to 1 (means action)
+      ya_train = np.ones((len(ya_train)))
+
       x = np.concatenate((xa_train, xi_train))
       y = np.concatenate((ya_train, yi_train))
+      x, y = shuffle(x, y)
       np.save(f"{dir_name}/{new_name}X", x)
       np.save(f"{dir_name}/{new_name}Y", y)
+
 
       dir_name = "idle_test"
       if not os.path.exists(dir_name):
         os.mkdir(os.path.join(os.getcwd(), dir_name))
 
       # save (X_actions test + X_idle test) and (y_actions test + y_idle test)
+      
+      # change y-labels to from 1,2,3,4 to 1 (means action)
+      ya_test = np.ones((len(ya_test)))
       x = np.concatenate((xa_test, xi_test))
       y = np.concatenate((ya_test, yi_test))
+      x, y = shuffle(x, y)
       np.save(f"{dir_name}/{new_name}X", x)
       np.save(f"{dir_name}/{new_name}Y", y)
 
@@ -173,7 +183,6 @@ def idle_points(values, events, psize = 750):
   index = 0
   for i in range(0, idle_size, psize):
     x[index] = values[i:i + psize]
-    y[index] = 0
     index += 1
   
   x = np.swapaxes(x, 1, 2)
