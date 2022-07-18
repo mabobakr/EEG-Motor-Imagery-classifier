@@ -9,6 +9,8 @@ from sklearn.model_selection import train_test_split
 from scipy.signal import butter, sosfilt
 from joblib import dump, load
 from sklearn.utils import shuffle
+import scipy
+
 
 
 def read_file(directory, filename):
@@ -16,16 +18,37 @@ def read_file(directory, filename):
   y = np.load(f"{directory}/{filename}Y.npy")
   return x, y
 
-# fileno is the number of subject
-# def read_file_sim(fileno): # For Simulator
-#   labels = {1: "L", 2: "R", 3: "F", 4: "B"}
-#   i = fileno
-#   x = np.load(f"numpy_test_data/{i}X.npy")
-#   y = np.load(f"numpy_test_data/{i}Y.npy")
+def downsample(x):
+  y = np.arange(x.shape[2]) % 2
+  y = np.where(y, True, False)
+  
+  return x[:, :, y]
 
-#   y = np.array([labels[i] for i in y])
+def dwt(x, hi_filter, lo_filter):
+  d = scipy.ndimage.convolve1d(x, hi_filter, mode="wrap")
+  a = scipy.ndimage.convolve1d(x, lo_filter, mode="wrap")
+  # hi_res = np.apply_along_axis(lambda m: np.convolve(m, hi_filter), axis=2, arr=x)
+  # lo_res = np.apply_along_axis(lambda m: np.convolve(m, lo_filter), axis=2, arr=x)
+  # d = downsample(hi_res)
+  # a = downsample(lo_res)
+  d = downsample(d)
+  a = downsample(a)
+  return a, d
 
-#   return x, y
+def wavedec(x, wavelet="db4", level=7):
+  db4 = pywt.Wavelet(wavelet)
+  hi_filter = db4.dec_hi
+  lo_filter = db4.dec_lo
+
+  coeffs = []
+  a = x
+  for i in range(level):
+    a, d = dwt(a, hi_filter, lo_filter)
+    coeffs.append(d)
+  
+  coeffs.append(a)
+  coeffs.reverse()
+  return coeffs
 
 def read_file_sim(directory, filename):
   labels = {1: "L", 2: "R", 3: "F", 4: "B"}
@@ -67,7 +90,8 @@ def predict_idle(x):
 
 # apply discrete wavelet transform
 def featurize(x):
-  coeff = pywt.wavedec(x, 'db4', level = 7)
+  coeff = wavedec(x) 
+  #pywt.wavedec(x, 'db4', level = 7)
   return coeff  
 
 
@@ -223,9 +247,4 @@ def action_points(values, codes, events, psize = 750):
 
   return x, y
   
-
-
-  
-
-
 
