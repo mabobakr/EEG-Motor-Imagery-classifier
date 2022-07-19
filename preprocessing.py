@@ -12,29 +12,33 @@ from sklearn.utils import shuffle
 import scipy
 
 
-
+# Read data file
 def read_file(directory, filename):
   x = np.load(f"{directory}/{filename}X.npy")
   y = np.load(f"{directory}/{filename}Y.npy")
   return x, y
 
+# Dyadic downsampling
 def downsample(x):
   y = np.arange(x.shape[2]) % 2
   y = np.where(y, True, False)
-  
   return x[:, :, y]
 
+# Apply one level of discrete wavelet transform
 def dwt(x, hi_filter, lo_filter):
   d = scipy.ndimage.convolve1d(x, hi_filter, mode="wrap")
   a = scipy.ndimage.convolve1d(x, lo_filter, mode="wrap")
+  d = downsample(d)
+  a = downsample(a)
+
+  # another method for convolution
   # hi_res = np.apply_along_axis(lambda m: np.convolve(m, hi_filter), axis=2, arr=x)
   # lo_res = np.apply_along_axis(lambda m: np.convolve(m, lo_filter), axis=2, arr=x)
   # d = downsample(hi_res)
   # a = downsample(lo_res)
-  d = downsample(d)
-  a = downsample(a)
   return a, d
 
+# Apply multilevel decomposition and return tree
 def wavedec(x, wavelet="db4", level=7):
   db4 = pywt.Wavelet(wavelet)
   hi_filter = db4.dec_hi
@@ -50,6 +54,7 @@ def wavedec(x, wavelet="db4", level=7):
   coeffs.reverse()
   return coeffs
 
+# Read file for simulator
 def read_file_sim(directory, filename):
   labels = {1: "L", 2: "R", 3: "F", 4: "B"}
   x = np.load(f"{directory}/{filename}X.npy")
@@ -59,6 +64,7 @@ def read_file_sim(directory, filename):
   return x, y
 
 
+# Predict function for the use in the simulator
 # X is data of one sample
 model = load("model.joblib")
 csp = load("csp.joblib")
@@ -73,6 +79,8 @@ def predict(x):
   X_test_f = np.concatenate(tuple(csp[j].transform(test_coeff[j]) for j in range(coeff_len)), axis=-1)
   return labels[model.predict(X_test_f[0:1])[0]]
 
+
+# Predict for the idle model
 # X is data of one sample
 idle_model = load("idle_model.joblib")
 idle_csp = load("idle_csp.joblib")
@@ -88,9 +96,11 @@ def predict_idle(x):
   return idle_model.predict(x_test_f[0:1])[0]
 
 
-# apply discrete wavelet transform
+# apply multilevel decomposition
 def featurize(x):
   coeff = wavedec(x) 
+
+  # Another way to generate the tree (ready-made)
   #pywt.wavedec(x, 'db4', level = 7)
   return coeff  
 
@@ -102,7 +112,7 @@ def filter(signal, band, fs):
   filtered = sosfilt(sos, signal)
   return filtered
 
-
+# Reads the GDF file
 def read_gdf(filename):
   # load the gdf file
   data = mne.io.read_raw_gdf(filename)
