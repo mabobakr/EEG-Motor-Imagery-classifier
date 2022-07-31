@@ -2,3 +2,4 @@
 *.npy
 /env
 __pycache__/
+/data
