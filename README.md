@@ -1,6 +1,6 @@
 # EEG-Motor-Imagery-classifier
 A machine learning model to classify EEG motor imagery tasks of BCI IV 2a dataset
-
+using DWT and CSP with an SVM classifier
 
 
 # Prerequistes
